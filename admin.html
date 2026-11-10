@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sózsheber - Admin Panel</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 30px; background: #f9f9f9; }
+        .container { max-width: 700px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .header-top h2 { margin: 0; }
+        .back-link { color: #555; text-decoration: none; font-weight: bold; background: #e0e0e0; padding: 5px 10px; border-radius: 4px; }
+        .back-link:hover { background: #d0d0d0; }
+        .form-group { margin-bottom: 20px; display: flex; gap: 10px; }
+        input[type="text"] { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
+        button { padding: 10px 15px; background: #c8ff36; border: 1px solid #000; font-weight: bold; cursor: pointer; border-radius: 4px; }
+        button:hover { background: #b0e62a; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+        .del-btn { background: #ff4d4d; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+        .del-btn:hover { background: #e60000; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header-top">
+        <h2>Sózsheber - Admin Panel</h2>
+        <a href="index.html" class="back-link">⬅ Bas sahypa</a>
+    </div>
+
+    <!-- Jańa sóz qosıw -->
+    <div class="form-group">
+        <input type="text" id="newWordInput" placeholder="Jańa sóz kiritiń...">
+        <button onclick="addWord()">+ Qosıw</button>
+    </div>
+
+    <!-- Izlew -->
+    <div class="form-group">
+        <input type="text" id="searchInput" placeholder="Sózdi izlew..." onkeyup="loadWords()">
+    </div>
+
+    <!-- Sózler dizimi -->
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Sóz</th>
+                <th>Ámel</th>
+            </tr>
+        </thead>
+        <tbody id="wordsTableBody">
+            <!-- JavaScript arqalı tolıladı -->
+        </tbody>
+    </table>
+</div>
+
+<script>
+    // =========================================================================
+    // ADMIN API ORNI: Google Cloud-qa backendti shıǵarǵannan soń usı siltemanı almastırasıń
+    // =========================================================================
+    const ADMIN_API_URL = 'http://127.0.0.1:5000/api/admin/words'; // <--- GOOGLE CLOUD URL ORNI
+    // =========================================================================
+
+    async function loadWords() {
+        const query = document.getElementById('searchInput').value;
+        try {
+            const res = await fetch(`${ADMIN_API_URL}?q=${encodeURIComponent(query)}`);
+            const result = await res.json();
+            
+            const tbody = document.getElementById('wordsTableBody');
+            tbody.innerHTML = '';
+
+            if(result.data && result.data.length > 0) {
+                result.data.forEach(item => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${item.id}</td>
+                            <td><b>${item.word}</b></td>
+                            <td>
+                                <button class="del-btn" onclick="deleteWord(${item.id})">Óshiriw</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="3">Sóz tabılmadı.</td></tr>';
+            }
+        } catch (e) {
+            console.error("Admin API menen baylanıs qáteligi: ", e);
+        }
+    }
+
+    async function addWord() {
+        const input = document.getElementById('newWordInput');
+        const word = input.value.trim();
+        if (!word) return alert('Sóz kiritiń!');
+
+        const res = await fetch(ADMIN_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ word: word })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            input.value = '';
+            loadWords();
+        } else {
+            alert('Qátelik: ' + data.message);
+        }
+    }
+
+    async function deleteWord(id) {
+        if (!confirm('Rastan usı sózdi óshirmekshisiz be?')) return;
+        const res = await fetch(`${ADMIN_API_URL}/${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) loadWords();
+    }
+
+    // Baslanǵısh maǵlıwmatlardı júklew
+    loadWords();
+</script>
+</body>
+</html>
