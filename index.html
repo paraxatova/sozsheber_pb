@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="kaa">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SózSheber — Qaraqalpaqsha tekst tekseriw</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            ink: "#171717",
+            paper: "#f4f0e8",
+            lime: "#c8ff36"
+          },
+          boxShadow: { hard: "8px 8px 0 #171717" }
+        }
+      }
+    };
+  </script>
+</head>
+<body class="min-h-screen bg-paper text-ink antialiased">
+  <div class="fixed inset-x-0 top-0 h-3 bg-lime border-b-2 border-ink"></div>
+
+  <main class="mx-auto flex min-h-screen max-w-6xl flex-col px-5 py-10 sm:px-8 lg:px-12">
+    <header class="flex items-center justify-between border-b-2 border-ink pb-5 pt-2">
+      <a href="#" class="text-xl font-black uppercase tracking-tight">SózSheber<span class="text-lime [text-shadow:1px_1px_0_#171717]">.</span></a>
+      <span class="border-2 border-ink bg-white px-3 py-1 text-xs font-bold uppercase tracking-widest">Qaraqalpaq tili</span>
+    </header>
+
+    <section class="grid flex-1 items-center gap-12 py-14 lg:grid-cols-[.85fr_1.15fr] lg:py-20">
+      <div>
+        <div class="mb-6 inline-flex items-center gap-2 bg-ink px-3 py-2 text-xs font-bold uppercase tracking-[.2em] text-white">
+          <span class="h-2 w-2 rounded-full bg-lime"></span>
+          Anıq hám túsinikli
+        </div>
+        <h1 class="max-w-xl text-5xl font-black leading-[.92] tracking-[-.05em] sm:text-6xl lg:text-7xl">
+          Tekstińizdi<br>
+          <span class="relative inline-block">
+            tekseriń.
+            <span class="absolute -bottom-2 left-0 -z-10 h-4 w-full bg-lime"></span>
+          </span>
+        </h1>
+        <p class="mt-7 max-w-md text-base font-medium leading-relaxed text-neutral-600 sm:text-lg">
+          Qaraqalpaq tilindegi teksti kirgiziń. Qátelerdi tabıw ushın bir márte basıw jetkilikli.
+        </p>
+
+        <div class="mt-10 flex gap-8 border-t-2 border-ink pt-5 text-sm font-bold">
+          <span><b class="block text-2xl font-black">01</b> Teksti jazıń</span>
+          <span><b class="block text-2xl font-black">02</b> Tekseriń</span>
+        </div>
+      </div>
+
+      <form id="checker" class="border-2 border-ink bg-white p-5 shadow-hard sm:p-7 relative">
+        <div class="mb-4 flex items-end justify-between gap-4">
+          <label for="text" class="text-lg font-black">Tekstińiz</label>
+          <div class="flex items-center gap-3">
+            <span id="count" class="text-xs font-bold text-neutral-500">0 / 2000</span>
+            <button type="button" id="clearBtn" class="border border-ink bg-neutral-100 px-2 py-0.5 text-xs font-black transition hover:bg-red-500 hover:text-white" title="Tazalaw">×</button>
+          </div>
+        </div>
+
+        <div class="relative">
+          <textarea id="text" maxlength="2000" rows="11" required
+            class="w-full resize-none border-2 border-ink bg-paper p-4 pb-10 text-base font-medium outline-none transition focus:bg-white focus:ring-4 focus:ring-lime"
+            placeholder="Qaraqalpaqsha teksti usı jerge jazıń..."></textarea>
+          <button type="button" id="copyInputBtn" class="absolute bottom-4 right-4 border-2 border-ink bg-white px-2.5 py-1 text-xs font-bold shadow-[2px_2px_0_#171717] transition hover:bg-lime">📋 Kopyalaw</button>
+        </div>
+
+        <div id="message" role="status" aria-live="polite" class="mt-3 min-h-6 text-sm font-bold"></div>
+
+        <button type="submit"
+          class="mt-3 flex w-full items-center justify-between border-2 border-ink bg-lime px-5 py-4 text-base font-black uppercase tracking-wider transition hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[5px_5px_0_#171717] active:translate-x-0 active:translate-y-0 active:shadow-none">
+          Tekseriw
+          <span aria-hidden="true" class="text-2xl leading-none">→</span>
+        </button>
+      </form>
+    </section>
+
+    <footer class="flex flex-col gap-2 border-t-2 border-ink py-5 text-xs font-bold uppercase tracking-wider text-neutral-500 sm:flex-row sm:justify-between">
+      <span>Qaraqalpaqsha tekst járdemshisi</span>
+      <div class="flex gap-4">
+        <span>Ápiwayı · Tez · Qolay</span>
+        <a href="admin.html" class="text-ink transition hover:text-lime">Admin Panel ⚙️</a>
+      </div>
+    </footer>
+  </main>
+
+  <script>
+    // =========================================================================
+    // API ORNI: Google Cloud-qa backendti shıǵarǵannan soń usı siltemanı almastırasıń
+    // =========================================================================
+    const API_URL = 'http://127.0.0.1:5000/api/check'; // <--- GOOGLE CLOUD URL ORNI
+    // =========================================================================
+
+    const form = document.querySelector("#checker");
+    const input = document.querySelector("#text");
+    const count = document.querySelector("#count");
+    const message = document.querySelector("#message");
+    const clearBtn = document.querySelector("#clearBtn");
+    const copyInputBtn = document.querySelector("#copyInputBtn");
+
+    input.addEventListener("input", () => {
+      count.textContent = `${input.value.length} / 2000`;
+      message.textContent = "";
+    });
+
+    clearBtn.addEventListener("click", () => {
+      input.value = "";
+      count.textContent = "0 / 2000";
+      message.textContent = "";
+      input.focus();
+    });
+
+    copyInputBtn.addEventListener("click", () => {
+      if (!input.value.trim()) return;
+      navigator.clipboard.writeText(input.value);
+      copyInputBtn.textContent = "✔ Kopyalandı!";
+      setTimeout(() => { copyInputBtn.textContent = "📋 Kopyalaw"; }, 2000);
+    });
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const textVal = input.value;
+      
+      if (!textVal.trim()) {
+        message.textContent = "Tekst kirgiziń.";
+        message.className = "mt-3 min-h-6 text-sm font-bold text-red-600";
+        input.focus();
+        return;
+      }
+
+      message.textContent = "Tekserilip atır...";
+      message.className = "mt-3 min-h-6 text-sm font-bold text-blue-600";
+
+      try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: textVal })
+        });
+        
+        const data = await response.json();
+        
+        if (data.errors && data.errors.length > 0) {
+            message.innerHTML = `<div class="mb-2 text-red-600 font-bold">Tabılǵan qáteler (${data.errors.length} ta). Dúzetıw ushın sózdi basıń:</div>`;
+            const errorMap = {};
+            data.errors.forEach(err => {
+                errorMap[err.original.toLowerCase()] = err.suggestions;
+            });
+
+            const container = document.createElement("div");
+            container.className = "flex flex-col gap-2 mt-2 p-4 bg-paper border-2 border-ink relative pb-12 result-container";
+
+            const lines = textVal.split("\n");
+            lines.forEach(line => {
+                const lineDiv = document.createElement("div");
+                lineDiv.className = "flex flex-wrap gap-1 line-row items-center";
+
+                const tokens = line.split(/(\s+|[.,!?:;—–\-"'«»()\[\]{}]+)/);
+                tokens.forEach(token => {
+                    if (!token) return;
+                    const cleanToken = token.replace(/^[^\wʻ’ʼ`]+|[^\wʻ’ʼ`]+$/g, "").toLowerCase();
+                    const span = document.createElement("span");
+                    span.textContent = token;
+                    span.className = "relative inline-block font-medium word-span transition-all";
+
+                    if (cleanToken && errorMap[cleanToken] !== undefined) {
+                        span.className += " border-b-2 border-red-600 bg-red-200/80 text-red-950 px-1 rounded-sm cursor-pointer hover:bg-red-300";
+                        
+                        const dropdown = document.createElement("div");
+                        dropdown.className = "absolute left-0 top-full mt-1 hidden bg-[#1e222b] text-white p-2 rounded-xl shadow-2xl z-50 text-sm min-w-[170px] border border-gray-700 dropdown-menu";
+                        
+                        const suggestions = errorMap[cleanToken];
+                        if (suggestions && suggestions.length > 0) {
+                            suggestions.forEach(variant => {
+                                const vItem = document.createElement("div");
+                                vItem.className = "flex items-center gap-2 py-1.5 px-3 hover:bg-gray-700/70 cursor-pointer rounded-lg text-gray-200 hover:text-white font-semibold transition";
+                                vItem.innerHTML = `<span class="text-emerald-400 font-bold">→</span> ${variant}`;
+                                
+                                vItem.onclick = (e) => {
+                                    e.stopPropagation();
+                                    span.textContent = token.replace(new RegExp(cleanToken, 'i'), variant);
+                                    span.className = "inline-block font-bold px-1 text-emerald-700 bg-emerald-100 border-b-2 border-emerald-600 rounded-sm word-span";
+                                    dropdown.remove();
+                                };
+                                dropdown.appendChild(vItem);
+                            });
+                        } else {
+                            const noOpt = document.createElement("div");
+                            noOpt.className = "py-1 px-2 text-xs text-gray-400 italic";
+                            noOpt.textContent = "Usınıslar tabılmadı";
+                            dropdown.appendChild(noOpt);
+                        }
+
+                        const footerTag = document.createElement("div");
+                        footerTag.className = "text-[10px] uppercase font-bold text-gray-400 pt-1.5 mt-1 border-t border-gray-700 tracking-wider px-2";
+                        footerTag.textContent = "IMLOVIY XATO";
+                        dropdown.appendChild(footerTag);
+
+                        span.onclick = (e) => {
+                            e.stopPropagation();
+                            document.querySelectorAll('.dropdown-menu').forEach(d => {
+                                if (d !== dropdown) d.classList.add('hidden');
+                            });
+                            dropdown.classList.toggle('hidden');
+                        };
+                        span.appendChild(dropdown);
+                    } else {
+                        span.className += " text-neutral-800";
+                    }
+                    lineDiv.appendChild(span);
+                });
+                container.appendChild(lineDiv);
+            });
+
+            const copyResBtn = document.createElement("button");
+            copyResBtn.type = "button";
+            copyResBtn.className = "absolute bottom-3 right-3 border-2 border-ink bg-white px-2.5 py-1 text-xs font-bold shadow-[2px_2px_0_#171717] transition hover:bg-lime";
+            copyResBtn.textContent = "📋 Nátiyjeni kopyalaw";
+            copyResBtn.onclick = () => {
+              const lineRows = container.querySelectorAll('.line-row');
+              const formattedLines = Array.from(lineRows).map(row => {
+                const spans = row.querySelectorAll('.word-span');
+                return Array.from(spans).map(s => {
+                  const clone = s.cloneNode(true);
+                  const drop = clone.querySelector('.dropdown-menu');
+                  if (drop) drop.remove();
+                  return clone.textContent;
+                }).join('');
+              }).join('\n');
+
+              navigator.clipboard.writeText(formattedLines);
+              copyResBtn.textContent = "✔ Kopyalandı!";
+              setTimeout(() => { copyResBtn.textContent = "📋 Nátiyjeni kopyalaw"; }, 2000);
+            };
+            container.appendChild(copyResBtn);
+            message.appendChild(container);
+
+            document.addEventListener("click", () => {
+                document.querySelectorAll('.dropdown-menu').forEach(d => d.classList.add('hidden'));
+            });
+
+        } else {
+            message.textContent = "Qáteler tabılmadı. Tekst durıs!";
+            message.className = "mt-3 min-h-6 text-sm font-bold text-green-700";
+        }
+
+      } catch (error) {
+          console.error("Qátelik júz berdi:", error);
+          message.textContent = "Server menen baylanıs joq! API islep turǵanın tekseriń.";
+          message.className = "mt-3 min-h-6 text-sm font-bold text-red-600";
+      }
+    });
+  </script>
+</body>
+</html>
