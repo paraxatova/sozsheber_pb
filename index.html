@@ -88,11 +88,7 @@
   </main>
 
   <script>
-    // =========================================================================
-    // Google Cloud Run API manzili
-    // =========================================================================
     const API_URL = 'https://sozsheber-bp-git-857145237931.europe-west1.run.app/api/check';
-    // =========================================================================
 
     const form = document.querySelector("#checker");
     const input = document.querySelector("#text");
@@ -123,7 +119,7 @@
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
       const textVal = input.value;
-      
+
       if (!textVal.trim()) {
         message.textContent = "Tekst kirgiziń.";
         message.className = "mt-3 min-h-6 text-sm font-bold text-red-600";
@@ -136,121 +132,133 @@
 
       try {
         const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: textVal })
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: textVal })
         });
-        
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
         const data = await response.json();
-        
+
         if (data.errors && data.errors.length > 0) {
-            message.innerHTML = `<div class="mb-2 text-red-600 font-bold">Tabılǵan qáteler (${data.errors.length} ta). Dúzetıw ushın sózdi basıń:</div>`;
-            const errorMap = {};
-            data.errors.forEach(err => {
-                errorMap[err.original.toLowerCase()] = err.suggestions;
-            });
+          message.innerHTML = `<div class="mb-2 text-red-600 font-bold">Tabılǵan qáteler (${data.errors.length} ta). Dúzetıw ushın sózdi basıń:</div>`;
+          const errorMap = {};
+          data.errors.forEach(err => {
+            errorMap[err.original.toLowerCase()] = err.suggestions || [];
+          });
 
-            const container = document.createElement("div");
-            container.className = "flex flex-col gap-2 mt-2 p-4 bg-paper border-2 border-ink relative pb-12 result-container";
+          const container = document.createElement("div");
+          container.className = "flex flex-col gap-2 mt-2 p-4 bg-paper border-2 border-ink relative pb-12 result-container";
 
-            const lines = textVal.split("\n");
-            lines.forEach(line => {
-                const lineDiv = document.createElement("div");
-                lineDiv.className = "flex flex-wrap gap-1 line-row items-center";
+          const lines = textVal.split("\n");
+          lines.forEach(line => {
+            const lineDiv = document.createElement("div");
+            lineDiv.className = "flex flex-wrap gap-1 line-row items-center";
 
-                const tokens = line.split(/(\s+|[.,!?:;—–\-"'«»()\[\]{}]+)/);
-                tokens.forEach(token => {
-                    if (!token) return;
-                    const cleanToken = token.replace(/^[^\wʻ’ʼ`]+|[^\wʻ’ʼ`]+$/g, "").toLowerCase();
-                    const span = document.createElement("span");
-                    span.textContent = token;
-                    span.className = "relative inline-block font-medium word-span transition-all";
+            const tokens = line.split(/(\s+|[.,!?:;—–\-"'«»()\[\]{}]+)/);
+            tokens.forEach(token => {
+              if (!token) return;
+              // Qaraqalpaqsha barlıq háriplerdi durıs ajratıw (\p{L})
+              const cleanToken = token.replace(/^[^\p{L}ʻ’ʼ`]+|[^\p{L}ʻ’ʼ`]+$/gu, "").toLowerCase();
+              const span = document.createElement("span");
+              span.textContent = token;
+              span.className = "relative inline-block font-medium word-span transition-all";
 
-                    if (cleanToken && errorMap[cleanToken] !== undefined) {
-                        span.className += " border-b-2 border-red-600 bg-red-200/80 text-red-950 px-1 rounded-sm cursor-pointer hover:bg-red-300";
-                        
-                        const dropdown = document.createElement("div");
-                        dropdown.className = "absolute left-0 top-full mt-1 hidden bg-[#1e222b] text-white p-2 rounded-xl shadow-2xl z-50 text-sm min-w-[170px] border border-gray-700 dropdown-menu";
-                        
-                        const suggestions = errorMap[cleanToken];
-                        if (suggestions && suggestions.length > 0) {
-                            suggestions.forEach(variant => {
-                                const vItem = document.createElement("div");
-                                vItem.className = "flex items-center gap-2 py-1.5 px-3 hover:bg-gray-700/70 cursor-pointer rounded-lg text-gray-200 hover:text-white font-semibold transition";
-                                vItem.innerHTML = `<span class="text-emerald-400 font-bold">→</span> ${variant}`;
-                                
-                                vItem.onclick = (e) => {
-                                    e.stopPropagation();
-                                    span.textContent = token.replace(new RegExp(cleanToken, 'i'), variant);
-                                    span.className = "inline-block font-bold px-1 text-emerald-700 bg-emerald-100 border-b-2 border-emerald-600 rounded-sm word-span";
-                                    dropdown.remove();
-                                };
-                                dropdown.appendChild(vItem);
-                            });
-                        } else {
-                            const noOpt = document.createElement("div");
-                            noOpt.className = "py-1 px-2 text-xs text-gray-400 italic";
-                            noOpt.textContent = "Usınıslar tabılmadı";
-                            dropdown.appendChild(noOpt);
+              if (cleanToken && errorMap[cleanToken] !== undefined) {
+                span.className += " border-b-2 border-red-600 bg-red-200/80 text-red-950 px-1 rounded-sm cursor-pointer hover:bg-red-300";
+
+                const dropdown = document.createElement("div");
+                dropdown.className = "absolute left-0 top-full mt-1 hidden bg-[#1e222b] text-white p-2 rounded-xl shadow-2xl z-50 text-sm min-w-[170px] border border-gray-700 dropdown-menu";
+
+                const suggestions = errorMap[cleanToken];
+                if (suggestions && suggestions.length > 0) {
+                  suggestions.forEach(variant => {
+                    const vItem = document.createElement("div");
+                    vItem.className = "flex items-center gap-2 py-1.5 px-3 hover:bg-gray-700/70 cursor-pointer rounded-lg text-gray-200 hover:text-white font-semibold transition";
+                    vItem.innerHTML = `<span class="text-emerald-400 font-bold">→</span> ${variant}`;
+
+                    vItem.onclick = (e) => {
+                      e.stopPropagation();
+                      const replaced = token.replace(/[\p{L}ʻ’ʼ`]+/u, (matched) => {
+                        if (matched === matched.toUpperCase()) return variant.toUpperCase();
+                        if (matched[0] === matched[0].toUpperCase()) {
+                          return variant.charAt(0).toUpperCase() + variant.slice(1);
                         }
+                        return variant;
+                      });
+                      span.textContent = replaced;
+                      span.className = "inline-block font-bold px-1 text-emerald-700 bg-emerald-100 border-b-2 border-emerald-600 rounded-sm word-span";
+                      dropdown.remove();
+                    };
+                    dropdown.appendChild(vItem);
+                  });
+                } else {
+                  const noOpt = document.createElement("div");
+                  noOpt.className = "py-1 px-2 text-xs text-gray-400 italic";
+                  noOpt.textContent = "Usınıslar tabılmadı";
+                  dropdown.appendChild(noOpt);
+                }
 
-                        const footerTag = document.createElement("div");
-                        footerTag.className = "text-[10px] uppercase font-bold text-gray-400 pt-1.5 mt-1 border-t border-gray-700 tracking-wider px-2";
-                        footerTag.textContent = "IMLOVIY XATO";
-                        dropdown.appendChild(footerTag);
+                const footerTag = document.createElement("div");
+                footerTag.className = "text-[10px] uppercase font-bold text-gray-400 pt-1.5 mt-1 border-t border-gray-700 tracking-wider px-2";
+                footerTag.textContent = "IMLOVIY XATO";
+                dropdown.appendChild(footerTag);
 
-                        span.onclick = (e) => {
-                            e.stopPropagation();
-                            document.querySelectorAll('.dropdown-menu').forEach(d => {
-                                if (d !== dropdown) d.classList.add('hidden');
-                            });
-                            dropdown.classList.toggle('hidden');
-                        };
-                        span.appendChild(dropdown);
-                    } else {
-                        span.className += " text-neutral-800";
-                    }
-                    lineDiv.appendChild(span);
-                });
-                container.appendChild(lineDiv);
+                span.onclick = (e) => {
+                  e.stopPropagation();
+                  document.querySelectorAll('.dropdown-menu').forEach(d => {
+                    if (d !== dropdown) d.classList.add('hidden');
+                  });
+                  dropdown.classList.toggle('hidden');
+                };
+                span.appendChild(dropdown);
+              } else {
+                span.className += " text-neutral-800";
+              }
+              lineDiv.appendChild(span);
             });
+            container.appendChild(lineDiv);
+          });
 
-            const copyResBtn = document.createElement("button");
-            copyResBtn.type = "button";
-            copyResBtn.className = "absolute bottom-3 right-3 border-2 border-ink bg-white px-2.5 py-1 text-xs font-bold shadow-[2px_2px_0_#171717] transition hover:bg-lime";
-            copyResBtn.textContent = "📋 Nátiyjeni kopyalaw";
-            copyResBtn.onclick = () => {
-              const lineRows = container.querySelectorAll('.line-row');
-              const formattedLines = Array.from(lineRows).map(row => {
-                const spans = row.querySelectorAll('.word-span');
-                return Array.from(spans).map(s => {
-                  const clone = s.cloneNode(true);
-                  const drop = clone.querySelector('.dropdown-menu');
-                  if (drop) drop.remove();
-                  return clone.textContent;
-                }).join('');
-              }).join('\n');
+          const copyResBtn = document.createElement("button");
+          copyResBtn.type = "button";
+          copyResBtn.className = "absolute bottom-3 right-3 border-2 border-ink bg-white px-2.5 py-1 text-xs font-bold shadow-[2px_2px_0_#171717] transition hover:bg-lime";
+          copyResBtn.textContent = "📋 Nátiyjeni kopyalaw";
+          copyResBtn.onclick = () => {
+            const lineRows = container.querySelectorAll('.line-row');
+            const formattedLines = Array.from(lineRows).map(row => {
+              const spans = row.querySelectorAll('.word-span');
+              return Array.from(spans).map(s => {
+                const clone = s.cloneNode(true);
+                const drop = clone.querySelector('.dropdown-menu');
+                if (drop) drop.remove();
+                return clone.textContent;
+              }).join('');
+            }).join('\n');
 
-              navigator.clipboard.writeText(formattedLines);
-              copyResBtn.textContent = "✔ Kopyalandı!";
-              setTimeout(() => { copyResBtn.textContent = "📋 Nátiyjeni kopyalaw"; }, 2000);
-            };
-            container.appendChild(copyResBtn);
-            message.appendChild(container);
+            navigator.clipboard.writeText(formattedLines);
+            copyResBtn.textContent = "✔ Kopyalandı!";
+            setTimeout(() => { copyResBtn.textContent = "📋 Nátiyjeni kopyalaw"; }, 2000);
+          };
+          container.appendChild(copyResBtn);
+          message.appendChild(container);
 
-            document.addEventListener("click", () => {
-                document.querySelectorAll('.dropdown-menu').forEach(d => d.classList.add('hidden'));
-            });
+          document.addEventListener("click", () => {
+            document.querySelectorAll('.dropdown-menu').forEach(d => d.classList.add('hidden'));
+          });
 
         } else {
-            message.textContent = "Qáteler tabılmadı. Tekst durıs!";
-            message.className = "mt-3 min-h-6 text-sm font-bold text-green-700";
+          message.textContent = "Qáteler tabılmadı. Tekst durıs!";
+          message.className = "mt-3 min-h-6 text-sm font-bold text-green-700";
         }
 
       } catch (error) {
-          console.error("Qátelik júz berdi:", error);
-          message.textContent = "Server menen baylanıs joq! API islep turǵanın tekseriń.";
-          message.className = "mt-3 min-h-6 text-sm font-bold text-red-600";
+        console.error("Qátelik júz berdi:", error);
+        message.textContent = "Server menen baylanıs joq! API islep turǵanın tekseriń.";
+        message.className = "mt-3 min-h-6 text-sm font-bold text-red-600";
       }
     });
   </script>
